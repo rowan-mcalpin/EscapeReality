@@ -8,15 +8,16 @@ namespace EscapeReality.Launcher
 {
     public enum LauncherStatus
     {
-        UPDATE_FAILED,
-        UPDATE_IN_PROGRESS,
-        GAME_INSTALLING,
+        UPDATE_AVAILABLE,
+        CHECK_FAILED,
+        INSTALLING,
         FAILED,
         READY
     }
 
     public partial class Launcher : Form
     {
+        private bool CanUpdate = false;
         readonly WebClient webClient;
         private LauncherStatus _status;
         internal LauncherStatus Status
@@ -27,13 +28,13 @@ namespace EscapeReality.Launcher
                 _status = value;
                 switch (_status)
                 {
-                    case LauncherStatus.UPDATE_IN_PROGRESS:
-                        UpdateButton.Text = "Updating...";
-                        UpdateButton.Enabled = false;
-                        PlayButton.Enabled = false;
+                    case LauncherStatus.UPDATE_AVAILABLE:
+                        UpdateButton.Text = "Update Available";
+                        UpdateButton.Enabled = true;
+                        PlayButton.Enabled = true;
                         break;
-                    case LauncherStatus.GAME_INSTALLING:
-                        UpdateButton.Text = "Installing Game...";
+                    case LauncherStatus.INSTALLING:
+                        UpdateButton.Text = "Installing...";
                         UpdateButton.Enabled = false;
                         PlayButton.Enabled = false;
                         break;
@@ -76,7 +77,8 @@ namespace EscapeReality.Launcher
 
                         if (LatestVersion.IsDifferentThan(InstalledVersion))
                         {
-                            InstallGameFiles(true, LatestVersion);
+                            // InstallGameFiles(true, LatestVersion); // Update to latest version
+                            Status = LauncherStatus.UPDATE_AVAILABLE;
                         }
                         else
                         {
@@ -85,7 +87,7 @@ namespace EscapeReality.Launcher
                     }
                     catch (Exception ex)
                     {
-                        Status = LauncherStatus.UPDATE_FAILED;
+                        Status = LauncherStatus.CHECK_FAILED;
                         MessageBox.Show($"Error checking for game updates. Details: \n{ex}");
                     }
             } else
@@ -104,13 +106,9 @@ namespace EscapeReality.Launcher
             }
             try
             {
-                if (IsUpdate)
+                Status = LauncherStatus.INSTALLING;
+                if (!IsUpdate)
                 {
-                    Status = LauncherStatus.UPDATE_IN_PROGRESS;
-                }
-                else
-                {
-                    Status = LauncherStatus.GAME_INSTALLING;
                     TargetVersion = new Version(webClient.DownloadString(Constants.ONLINE_VERSION_LINK));
                 }
 
